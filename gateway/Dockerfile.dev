@@ -1,0 +1,6 @@
+FROM node:18-alpine3.17
+WORKDIR /var/www/gateway
+COPY ./ /var/www/gateway
+#RUN npm i
+ENTRYPOINT ["npm", "run", "start:dev"]
+EXPOSE 3000

@@ -1,0 +1,78 @@
+version: "3"
+services:
+  shop-database:
+    container_name: shop_db
+    image: "postgres:13-alpine"
+    restart: "unless-stopped"
+    ports:
+      - "6432:5432"
+    networks:
+      - "shop_network"
+    environment:
+      POSTGRES_PASSWORD: shoppassw0rd
+      POSTGRES_USER: shopuser
+      POSTGRES_DB: shopdb
+
+  rabbitmq:
+    image: "rabbitmq:3-management-alpine"
+    depends_on:
+      - shop-database
+    container_name: "shop_rabbitmq"
+    restart: "always"
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    # volumes:
+    #   - "./rabbitmq/data:/var/lib/rabbitmq"
+    networks:
+      - "shop_network"
+    environment:
+      RABBITMQ_DEFAULT_USER: "root"
+      RABBITMQ_DEFAULT_PASS: "root"
+
+  gateway-service:
+    container_name: "shop_gateway"
+    depends_on:
+      - rabbitmq
+    build:
+      context: "./gateway"
+      dockerfile: "Dockerfile.dev"
+    networks:
+      - "shop_network"
+    ports:
+      - "3001:3000"
+    volumes:
+      - "./gateway:/var/www/gateway"
+    environment:
+      RABBITMQ_HOST: "shop_rabbitmq"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: "root"
+      RABBITMQ_PASSWORD: "root"
+
+  products-service:
+    container_name: "shop_products_service"
+    depends_on:
+      - gateway-service
+    build:
+      context: "./products-service"
+      dockerfile: "Dockerfile.dev"
+    networks:
+      - "shop_network"
+    ports:
+      - "3002:3000"
+    volumes:
+      - "./products-service:/var/www/products-service"
+    environment:
+      RABBITMQ_HOST: "shop_rabbitmq"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: "root"
+      RABBITMQ_PASSWORD: "root"
+      DB_HOST: "shop_db"
+      DB_PORT: "5432"
+      DB_USER: "shopuser"
+      DB_PASSWORD: "shoppassw0rd"
+      DB_NAME: "shopdb"
+
+networks:
+  shop_network:
+    external: false
