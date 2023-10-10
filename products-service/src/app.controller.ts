@@ -1,19 +1,19 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { AppService } from './app.service';
-import { MessagePattern } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { Request } from 'express';
+import { parse } from 'flatted';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get()
-  getHello() {
-    const message = this.appService.getHello();
-    return { message: message };
-  }
+  @MessagePattern({ cmd: 'products-service' })
+  getAllProducts(@Payload() data: string) {
+    const parsedData: Request = parse(data);
+    // console.log(parsedData);
+    console.log(parsedData.url, parsedData.query);
 
-  @MessagePattern({ cmd: 'getAllProducts' })
-  getAllProducts() {
     return { message: 'getAllProducts signal received!' };
   }
 }
